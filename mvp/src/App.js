@@ -8,6 +8,7 @@ import Typography from '@material-ui/core/Typography';
 import clsx from 'clsx';
 import React from 'react';
 import { List, ListItem, ListItemText } from '@material-ui/core';
+import Game from './Game';
 
 function MadeBySteve() {
   return (
@@ -105,11 +106,7 @@ export default function Dashboard() {
             </Grid>
             <Grid item xs={12} sm={7} md={8} lg={9}>
               <Paper className={fixedHeightPaper}>
-                <Typography
-                  align="center"
-                  component="h1"
-                  variant="h5"
-                ></Typography>
+                <Game />
               </Paper>
             </Grid>
             <Grid item xs={12} sm={5} md={4} lg={3}>
