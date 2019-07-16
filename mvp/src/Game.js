@@ -1,11 +1,32 @@
-import blue from '@material-ui/core/colors/blue';
 import React, { useEffect, useRef } from 'react';
 import { makeStyles } from '@material-ui/core/styles';
 
+const useStyles = makeStyles(theme => ({
+  wrapper: {
+    position: 'relative'
+  },
+  background: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    zIndex: 1,
+    border: '1px solid black'
+  },
+  foreground: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    zIndex: 2,
+    border: '1px solid black'
+  }
+}));
+
 const params = {
-  lineWidth: 1.0,
+  lineWidth: 1,
   cellWidth: 10,
-  cellHeight: 10
+  cellHeight: 10,
+  widthInCells: 40,
+  heightInCells: 20
 };
 
 const drawForeground = canvas => {
@@ -16,8 +37,8 @@ const drawForeground = canvas => {
 const drawBackground = canvas => {
   const context = canvas.getContext('2d');
   context.clearRect(0, 0, canvas.width, canvas.height);
-  context.fillStyle = blue[50];
-  context.fillRect(0, 0, canvas.width, canvas.height);
+  // context.fillStyle = blue[50];
+  // context.fillRect(0, 0, canvas.width, canvas.height);
 
   // draw the grid
   // first translate half a pixel for pixel accuracy
@@ -38,36 +59,16 @@ const drawBackground = canvas => {
     context.lineTo(canvas.width, y);
   }
 
-  context.stroke();
-
   // restore translation
   context.setTransform(1, 0, 0, 1, 0, 0);
+  context.stroke();
 };
 
 const resizeCanvas = canvas => {
-  canvas.height = canvas.parentElement.clientHeight;
-  canvas.width = canvas.parentElement.clientWidth;
+  const { cellWidth, cellHeight, widthInCells, heightInCells } = params;
+  canvas.width = cellWidth * widthInCells;
+  canvas.height = cellHeight * heightInCells;
 };
-
-const useStyles = makeStyles(theme => ({
-  wrapper: {
-    position: 'relative',
-    height: '100%',
-    width: '100%'
-  },
-  background: {
-    position: 'absolute',
-    left: 0,
-    top: 0,
-    zIndex: 1
-  },
-  foreground: {
-    position: 'absolute',
-    left: 0,
-    top: 0,
-    zIndex: 2
-  }
-}));
 
 const Game = () => {
   const classes = useStyles();
@@ -79,17 +80,16 @@ const Game = () => {
     const b = backgroundRef.current;
     resizeCanvas(c);
     resizeCanvas(b);
+    const wrapper = c.parentNode;
+    const paper = wrapper.parentNode;
+    paper.style.height = `${c.height + 34}px`;
+    wrapper.style.width = `${c.width}px`;
     drawBackground(b);
     drawForeground(c);
   };
 
   useEffect(() => {
-    const c = foregroundRef.current;
-    const b = backgroundRef.current;
-    resizeCanvas(c);
-    resizeCanvas(b);
-    drawBackground(b);
-    drawForeground(c);
+    resizeHandler();
   }, []);
 
   useEffect(() => {
