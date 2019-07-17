@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { makeStyles } from '@material-ui/core/styles';
+import useAnimationFrame from './useAnimationFrame';
 
 const useStyles = makeStyles(theme => ({
   wrapper: {
@@ -23,10 +24,10 @@ const useStyles = makeStyles(theme => ({
 
 const params = {
   lineWidth: 1,
-  cellWidth: 10,
-  cellHeight: 10,
-  widthInCells: 40,
-  heightInCells: 40
+  cellWidth: 20,
+  cellHeight: 20,
+  widthInCells: 20,
+  heightInCells: 20
 };
 
 const initalCells = Array(params.widthInCells * params.heightInCells).fill(0);
@@ -61,6 +62,7 @@ const getIndexForGridCoords = (row, col) => {
 // calculate the next cycle
 const calculateNextState = cells => {
   const newCells = Array(cells.length).fill(0);
+  let cellsChanged = false;
 
   // iterate over the array of given cells
   // count their neighbors
@@ -85,10 +87,6 @@ const calculateNextState = cells => {
     const rightIndex = getIndexForGridCoords(row, column + 1);
     neighborCount += rightIndex !== null && cells[rightIndex] === 1 ? 1 : 0;
 
-    // if(i === 1) {
-    // debugger
-    // }
-
     // check bottom row
     // check top row
     for (let j = column - 1; j < column + 2; j++) {
@@ -105,6 +103,16 @@ const calculateNextState = cells => {
     ) {
       newCells[i] = 1;
     }
+
+    // was there a change?
+    if (newCells[i] !== cells[i]) {
+      cellsChanged = true;
+    }
+  }
+
+  // return false if nothing changed
+  if (!cellsChanged) {
+    return false;
   }
 
   return newCells;
@@ -149,6 +157,8 @@ const resizeCanvas = canvas => {
 const Game = () => {
   // initialize with an empty board
   const [cells, setCells] = useState(initalCells);
+  const [previousFrameTime, setTime] = useState(0);
+  const [running, setRunning] = useState(false);
   const classes = useStyles();
   const backgroundRef = useRef(null);
   const foregroundRef = useRef(null);
@@ -214,6 +224,18 @@ const Game = () => {
     drawForeground(canvas, cells);
   }, [cells]);
 
+  useAnimationFrame(() => {
+    if (running && Date.now() - previousFrameTime > 1000 / 5) {
+      setTime(Date.now());
+      const nextCells = calculateNextState(cells);
+      if (nextCells) {
+        setCells(nextCells);
+      } else {
+        setRunning(false);
+      }
+    }
+  });
+
   return (
     <div>
       <div className={classes.wrapper}>
@@ -221,7 +243,19 @@ const Game = () => {
         <canvas className={classes.foreground} ref={foregroundRef} />
       </div>
       <button onClick={() => setCells(initalCells)}>clear</button>
-      <button onClick={() => setCells(calculateNextState(cells))}>cycle</button>
+      <button
+        onClick={() => {
+          const nextCells = calculateNextState(cells);
+          if (nextCells) {
+            setCells(nextCells);
+          }
+        }}
+      >
+        step
+      </button>
+      <button onClick={() => (running ? setRunning(false) : setRunning(true))}>
+        {running ? 'pause' : 'continuous'}
+      </button>
     </div>
   );
 };
