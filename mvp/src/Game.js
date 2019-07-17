@@ -24,10 +24,10 @@ const useStyles = makeStyles(theme => ({
 
 const params = {
   lineWidth: 1,
-  cellWidth: 20,
-  cellHeight: 20,
-  widthInCells: 20,
-  heightInCells: 20
+  cellWidth: 10,
+  cellHeight: 10,
+  widthInCells: 80,
+  heightInCells: 50
 };
 
 const initalCells = Array(params.widthInCells * params.heightInCells).fill(0);
@@ -57,6 +57,16 @@ const getIndexForGridCoords = (row, col) => {
   }
 
   return row * params.widthInCells + col;
+};
+
+// generate random cells
+const randomizeCells = cells => {
+  const newCells = Array(cells.length).fill(0);
+  for(let i = 0; i < cells.length; i++) {
+    newCells[i] = Math.floor(Math.random() * 2);
+  }
+
+  return newCells;
 };
 
 // calculate the next cycle
@@ -236,6 +246,8 @@ const Game = () => {
     }
   });
 
+
+
   return (
     <div>
       <div className={classes.wrapper}>
@@ -253,6 +265,7 @@ const Game = () => {
       >
         step
       </button>
+      <button onClick={() => setCells(randomizeCells(cells))}>randomize</button>
       <button onClick={() => (running ? setRunning(false) : setRunning(true))}>
         {running ? 'pause' : 'continuous'}
       </button>
