@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { makeStyles } from '@material-ui/core/styles';
 import useAnimationFrame from './useAnimationFrame';
 
@@ -27,10 +27,10 @@ const params = {
   cellWidth: 10,
   cellHeight: 10,
   widthInCells: 80,
-  heightInCells: 50
+  heightInCells: 80
 };
 
-const initalCells = Array(params.widthInCells * params.heightInCells).fill(0);
+const initialCells = Array(params.widthInCells * params.heightInCells).fill(0);
 
 const drawForeground = (canvas, cells) => {
   const context = canvas.getContext('2d');
@@ -62,7 +62,7 @@ const getIndexForGridCoords = (row, col) => {
 // generate random cells
 const randomizeCells = cells => {
   const newCells = Array(cells.length).fill(0);
-  for(let i = 0; i < cells.length; i++) {
+  for (let i = 0; i < cells.length; i++) {
     newCells[i] = Math.floor(Math.random() * 2);
   }
 
@@ -159,22 +159,34 @@ const drawBackground = canvas => {
 };
 
 const resizeCanvas = canvas => {
-  const { cellWidth, cellHeight, widthInCells, heightInCells } = params;
-  canvas.width = cellWidth * widthInCells;
+  const { cellWidth, cellHeight, heightInCells } = params;
+  // canvas.width = cellWidth * widthInCells;
   canvas.height = cellHeight * heightInCells;
+  const paper = canvas.parentNode.parentNode.parentNode;
+  const computedStyle = getComputedStyle(paper);
+  const paperWidth =
+    paper.clientWidth -
+    (parseFloat(computedStyle.paddingLeft) +
+      parseFloat(computedStyle.paddingRight));
+  const maxWidthInCells = Math.floor(paperWidth / params.cellWidth);
+  canvas.width = maxWidthInCells * cellWidth;
+  params.widthInCells = maxWidthInCells;
 };
 
 const Game = () => {
   // initialize with an empty board
-  const [cells, setCells] = useState(initalCells);
+  const [cells, setCells] = useState(initialCells);
   const [previousFrameTime, setTime] = useState(0);
+  const [drawing, setDrawing] = useState(false);
   const [running, setRunning] = useState(false);
+  const [mirroring, setMirroring] = useState(false);
   const classes = useStyles();
   const backgroundRef = useRef(null);
   const foregroundRef = useRef(null);
+  const savedDrawHandler = useRef(null);
 
   // handle for window resize event
-  const resizeHandler = useCallback(() => {
+  const resizeHandler = () => {
     const c = foregroundRef.current;
     const b = backgroundRef.current;
     resizeCanvas(c);
@@ -189,16 +201,43 @@ const Game = () => {
     wrapper.style.height = `${c.height + 2}px`;
     drawBackground(b);
     drawForeground(c);
-  }, []);
+    setCells(Array(params.widthInCells * params.heightInCells).fill(0));
+  };
+
+  useEffect(resizeHandler, []);
 
   // handle canvas click
-  const canvasClickHandler = useCallback(
-    e => {
-      const { clientY: clickY, clientX: clickX } = e;
+  const handleMouseDown = e => {
+    // const { clientY: clickY, clientX: clickX } = e;
+    // const canvas = foregroundRef.current;
+    // const rect = canvas.getBoundingClientRect();
+    // const canvasX = clickX - rect.left;
+    // const canvasY = clickY - rect.top;
+    //
+    // // how many rows down did we click?
+    // const row = Math.floor(canvasY / params.cellHeight);
+    // const column = Math.floor(canvasX / params.cellWidth);
+    //
+    // // get the cell for those coordinates
+    // const index = params.widthInCells * row + column;
+    //
+    // // copy and mutate before setting new state
+    // const nextCells = [...cells];
+    // nextCells[index] = nextCells[index] === 0 ? 1 : 0;
+    setDrawing(true);
+    setRunning(false);
+    savedDrawHandler.current(e)
+    // setCells(nextCells);
+  };
+
+  useEffect(() => {
+    // handler for drawing
+    const drawingHandler = e => {
+      const { clientY, clientX } = e;
       const canvas = foregroundRef.current;
       const rect = canvas.getBoundingClientRect();
-      const canvasX = clickX - rect.left;
-      const canvasY = clickY - rect.top;
+      const canvasX = clientX - rect.left;
+      const canvasY = clientY - rect.top;
 
       // how many rows down did we click?
       const row = Math.floor(canvasY / params.cellHeight);
@@ -206,27 +245,110 @@ const Game = () => {
 
       // get the cell for those coordinates
       const index = params.widthInCells * row + column;
+      if (cells[index] === 1) {
+        return;
+      }
 
       // copy and mutate before setting new state
       const nextCells = [...cells];
-      nextCells[index] = nextCells[index] === 0 ? 1 : 0;
+      nextCells[index] = 1;
+
+      // check if we're mirroring
+      if (mirroring) {
+        const halfWidth = Math.floor(params.widthInCells / 2);
+        const halfHeight = Math.floor(params.heightInCells / 2);
+        const distanceToMiddle = Math.abs(column - halfWidth);
+        const distanceToMiddleHeight = Math.abs(row - halfHeight);
+        if (column > halfWidth) {
+          if (row > halfHeight) {
+            // bottom right
+            nextCells[
+              getIndexForGridCoords(row, halfWidth - distanceToMiddle)
+            ] = 1;
+            nextCells[
+              getIndexForGridCoords(halfHeight - distanceToMiddleHeight, column)
+            ] = 1;
+            nextCells[
+              getIndexForGridCoords(
+                halfHeight - distanceToMiddleHeight,
+                halfWidth - distanceToMiddle
+              )
+            ] = 1;
+          } else {
+            // top right
+            nextCells[
+              getIndexForGridCoords(row, halfWidth - distanceToMiddle)
+            ] = 1;
+            nextCells[
+              getIndexForGridCoords(halfHeight + distanceToMiddleHeight, column)
+            ] = 1;
+            nextCells[
+              getIndexForGridCoords(
+                halfHeight + distanceToMiddleHeight,
+                halfWidth - distanceToMiddle
+              )
+            ] = 1;
+          }
+        } else {
+          if (row > halfHeight) {
+            // bottom left
+            nextCells[
+              getIndexForGridCoords(row, halfWidth + distanceToMiddle)
+            ] = 1;
+            nextCells[
+              getIndexForGridCoords(halfHeight - distanceToMiddleHeight, column)
+            ] = 1;
+            nextCells[
+              getIndexForGridCoords(
+                halfHeight - distanceToMiddleHeight,
+                halfWidth + distanceToMiddle
+              )
+            ] = 1;
+          } else {
+            // top left
+            nextCells[
+              getIndexForGridCoords(row, halfWidth + distanceToMiddle)
+            ] = 1;
+            nextCells[
+              getIndexForGridCoords(halfHeight + distanceToMiddleHeight, column)
+            ] = 1;
+            nextCells[
+              getIndexForGridCoords(
+                halfHeight + distanceToMiddleHeight,
+                halfWidth + distanceToMiddle
+              )
+            ] = 1;
+          }
+        }
+      }
       setCells(nextCells);
-    },
-    [cells]
-  );
+    };
+    savedDrawHandler.current = drawingHandler;
+  });
+
+  useEffect(() => {
+    if (drawing === true) {
+      window.addEventListener('mousemove', savedDrawHandler.current);
+    } else {
+      window.removeEventListener('mousemove', savedDrawHandler.current);
+    }
+
+    return () => {
+      window.removeEventListener('mousemove', savedDrawHandler.current);
+    };
+  }, [drawing, cells, mirroring]);
 
   // resize on Mount
   useEffect(() => {
-    const fgCanvas = foregroundRef.current;
-    resizeHandler();
+    // const fgCanvas = foregroundRef.current;
     window.addEventListener('resize', resizeHandler);
-    fgCanvas.addEventListener('click', canvasClickHandler);
+    // fgCanvas.addEventListener('mousedown', canvasClickHandler);
 
     return () => {
       window.removeEventListener('resize', resizeHandler);
-      fgCanvas.removeEventListener('click', canvasClickHandler);
+      // fgCanvas.removeEventListener('mousedown', canvasClickHandler);
     };
-  }, [resizeHandler, canvasClickHandler]);
+  }, [cells]);
 
   // rerender foreground on cells change
   useEffect(() => {
@@ -235,7 +357,7 @@ const Game = () => {
   }, [cells]);
 
   useAnimationFrame(() => {
-    if (running && Date.now() - previousFrameTime > 1000 / 5) {
+    if (running) {
       setTime(Date.now());
       const nextCells = calculateNextState(cells);
       if (nextCells) {
@@ -246,15 +368,24 @@ const Game = () => {
     }
   });
 
-
-
   return (
     <div>
       <div className={classes.wrapper}>
         <canvas className={classes.background} ref={backgroundRef} />
-        <canvas className={classes.foreground} ref={foregroundRef} />
+        <canvas
+          className={classes.foreground}
+          ref={foregroundRef}
+          onMouseDown={handleMouseDown}
+          onMouseOut={() => setDrawing(false)}
+          onMouseUp={() => setDrawing(false)}
+        />
       </div>
-      <button onClick={() => setCells(initalCells)}>clear</button>
+      <button onClick={() => setCells(initialCells)}>clear</button>
+      <button
+        onClick={() => (mirroring ? setMirroring(false) : setMirroring(true))}
+      >
+        {mirroring ? 'stop mirroring' : 'mirror'}
+      </button>
       <button
         onClick={() => {
           const nextCells = calculateNextState(cells);
