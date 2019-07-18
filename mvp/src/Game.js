@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { makeStyles } from '@material-ui/core/styles';
 import useAnimationFrame from './useAnimationFrame';
+import { Grid, Button, ButtonGroup } from '@material-ui/core';
 
 const useStyles = makeStyles(theme => ({
   wrapper: {
@@ -131,8 +132,6 @@ const calculateNextState = cells => {
 const drawBackground = canvas => {
   const context = canvas.getContext('2d');
   context.clearRect(0, 0, canvas.width, canvas.height);
-  // context.fillStyle = blue[50];
-  // context.fillRect(0, 0, canvas.width, canvas.height);
 
   // draw the grid
   // first translate half a pixel for pixel accuracy
@@ -171,12 +170,13 @@ const resizeCanvas = canvas => {
   const maxWidthInCells = Math.floor(paperWidth / params.cellWidth);
   canvas.width = maxWidthInCells * cellWidth;
   params.widthInCells = maxWidthInCells;
+  return maxWidthInCells;
 };
 
 const Game = () => {
   // initialize with an empty board
   const [cells, setCells] = useState(initialCells);
-  const [previousFrameTime, setTime] = useState(0);
+  const [, setTime] = useState(0);
   const [drawing, setDrawing] = useState(false);
   const [running, setRunning] = useState(false);
   const [mirroring, setMirroring] = useState(false);
@@ -189,7 +189,7 @@ const Game = () => {
   const resizeHandler = () => {
     const c = foregroundRef.current;
     const b = backgroundRef.current;
-    resizeCanvas(c);
+    const newWidth = resizeCanvas(c);
     resizeCanvas(b);
     const wrapper = c.parentNode;
     const paper = wrapper.parentNode;
@@ -201,33 +201,16 @@ const Game = () => {
     wrapper.style.height = `${c.height + 2}px`;
     drawBackground(b);
     drawForeground(c);
-    setCells(Array(params.widthInCells * params.heightInCells).fill(0));
+    setCells(Array(newWidth * params.heightInCells).fill(0));
   };
 
   useEffect(resizeHandler, []);
 
   // handle canvas click
   const handleMouseDown = e => {
-    // const { clientY: clickY, clientX: clickX } = e;
-    // const canvas = foregroundRef.current;
-    // const rect = canvas.getBoundingClientRect();
-    // const canvasX = clickX - rect.left;
-    // const canvasY = clickY - rect.top;
-    //
-    // // how many rows down did we click?
-    // const row = Math.floor(canvasY / params.cellHeight);
-    // const column = Math.floor(canvasX / params.cellWidth);
-    //
-    // // get the cell for those coordinates
-    // const index = params.widthInCells * row + column;
-    //
-    // // copy and mutate before setting new state
-    // const nextCells = [...cells];
-    // nextCells[index] = nextCells[index] === 0 ? 1 : 0;
     setDrawing(true);
     setRunning(false);
-    savedDrawHandler.current(e)
-    // setCells(nextCells);
+    savedDrawHandler.current(e);
   };
 
   useEffect(() => {
@@ -380,26 +363,40 @@ const Game = () => {
           onMouseUp={() => setDrawing(false)}
         />
       </div>
-      <button onClick={() => setCells(initialCells)}>clear</button>
-      <button
-        onClick={() => (mirroring ? setMirroring(false) : setMirroring(true))}
-      >
-        {mirroring ? 'stop mirroring' : 'mirror'}
-      </button>
-      <button
-        onClick={() => {
-          const nextCells = calculateNextState(cells);
-          if (nextCells) {
-            setCells(nextCells);
-          }
-        }}
-      >
-        step
-      </button>
-      <button onClick={() => setCells(randomizeCells(cells))}>randomize</button>
-      <button onClick={() => (running ? setRunning(false) : setRunning(true))}>
-        {running ? 'pause' : 'continuous'}
-      </button>
+      <Grid container spacing={1} direction="column" alignItems="center">
+        <Grid item>
+          <ButtonGroup size="small">
+            <Button onClick={() => setCells(initialCells)}>clear</Button>
+            <Button
+              onClick={() =>
+                mirroring ? setMirroring(false) : setMirroring(true)
+              }
+            >
+              {mirroring ? 'stop mirroring' : 'mirror'}
+            </Button>
+            <Button
+              onClick={() => {
+                const nextCells = calculateNextState(cells);
+                if (nextCells) {
+                  setCells(nextCells);
+                }
+              }}
+            >
+              step
+            </Button>
+    <Button onClick={() => {
+      setCells(randomizeCells(cells));
+    }}>
+              randomize
+            </Button>
+            <Button
+              onClick={() => (running ? setRunning(false) : setRunning(true))}
+            >
+              {running ? 'pause' : 'continuous'}
+            </Button>
+          </ButtonGroup>
+        </Grid>
+      </Grid>
     </div>
   );
 };
