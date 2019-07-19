@@ -31,8 +31,8 @@ const useStyles = makeStyles(theme => ({
 
 const params = {
   lineWidth: 1,
-  cellWidth: 10,
-  cellHeight: 10,
+  cellWidth: 6,
+  cellHeight: 6,
   widthInCells: 80,
   heightInCells: 80
 };
@@ -161,6 +161,7 @@ const drawBackground = canvas => {
 
   // restore translation
   context.setTransform(1, 0, 0, 1, 0, 0);
+  context.strokeStyle = '#eee';
   context.stroke();
 };
 
@@ -204,7 +205,7 @@ const Game = () => {
 
     // set some heights to account for overlayed canvases
     // and their borders
-    paper.style.height = `${c.height + 34}px`;
+    // paper.style.height = `${c.height + 34}px`;
     wrapper.style.width = `${c.width}px`;
     wrapper.style.height = `${c.height + 2}px`;
     drawBackground(b);
@@ -412,8 +413,8 @@ const Game = () => {
               value={delay}
               onChange={e => setDelay(e.target.value)}
               variant="outlined"
-    label="delay between frames"
-    className={classes.delayField}
+              label="delay between frames"
+              className={classes.delayField}
             />
           </form>
         </Grid>
