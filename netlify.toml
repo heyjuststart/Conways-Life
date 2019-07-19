@@ -1,0 +1,8 @@
+[build]
+  base = "mvp/"
+  publish = "mvp/build/"
+
+[[redirects]]
+  from="/*"
+  to="/index.html"
+  status=200
