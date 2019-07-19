@@ -132,7 +132,7 @@ export default function Dashboard() {
                   <Link href="https://en.wikipedia.org/wiki/Conway's_Game_of_Life">
                     {"John Conway's Game of Life"}
                   </Link>
-                  { " algorithm" }. It is one of the first ever simulation games
+                  {' algorithm'}. It is one of the first ever simulation games
                   designed to mimic real life in some way. This type of
                   algorithm is useful in fields scientific fields and can be
                   used to model a wide range of phenomena including molecular

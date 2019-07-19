@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { makeStyles } from '@material-ui/core/styles';
 import useAnimationFrame from './useAnimationFrame';
-import { Grid, Button, ButtonGroup } from '@material-ui/core';
+import { Grid, Button, ButtonGroup, TextField } from '@material-ui/core';
 
 const useStyles = makeStyles(theme => ({
   wrapper: {
@@ -20,6 +20,12 @@ const useStyles = makeStyles(theme => ({
     top: 0,
     zIndex: 2,
     border: '1px solid black'
+  },
+  delayField: {
+    marginTop: '10px'
+  },
+  buttonRow: {
+    marginTop: '10px'
   }
 }));
 
@@ -67,6 +73,7 @@ const randomizeCells = cells => {
     newCells[i] = Math.floor(Math.random() * 2);
   }
 
+  debugger;
   return newCells;
 };
 
@@ -176,7 +183,8 @@ const resizeCanvas = canvas => {
 const Game = () => {
   // initialize with an empty board
   const [cells, setCells] = useState(initialCells);
-  const [, setTime] = useState(0);
+  const [previousFrameTime, setTime] = useState(0);
+  const [delay, setDelay] = useState(0);
   const [drawing, setDrawing] = useState(false);
   const [running, setRunning] = useState(false);
   const [mirroring, setMirroring] = useState(false);
@@ -340,7 +348,7 @@ const Game = () => {
   }, [cells]);
 
   useAnimationFrame(() => {
-    if (running) {
+    if (running && Date.now() - previousFrameTime > delay) {
       setTime(Date.now());
       const nextCells = calculateNextState(cells);
       if (nextCells) {
@@ -365,7 +373,7 @@ const Game = () => {
       </div>
       <Grid container spacing={1} direction="column" alignItems="center">
         <Grid item>
-          <ButtonGroup size="small">
+          <ButtonGroup size="small" className={classes.buttonRow}>
             <Button onClick={() => setCells(initialCells)}>clear</Button>
             <Button
               onClick={() =>
@@ -384,9 +392,11 @@ const Game = () => {
             >
               step
             </Button>
-    <Button onClick={() => {
-      setCells(randomizeCells(cells));
-    }}>
+            <Button
+              onClick={() => {
+                setCells(randomizeCells(cells));
+              }}
+            >
               randomize
             </Button>
             <Button
@@ -395,6 +405,17 @@ const Game = () => {
               {running ? 'pause' : 'continuous'}
             </Button>
           </ButtonGroup>
+          <form>
+            <TextField
+              id="delay"
+              type="number"
+              value={delay}
+              onChange={e => setDelay(e.target.value)}
+              variant="outlined"
+    label="delay between frames"
+    className={classes.delayField}
+            />
+          </form>
         </Grid>
       </Grid>
     </div>
